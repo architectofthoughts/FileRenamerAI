@@ -47,26 +47,38 @@ class FileRenamerGUI:
             ttk.Button(api_frame, text="API 키가 없습니다", 
                       command=self.use_default_api_key).grid(row=0, column=2, padx=5)
             
-            # 폴더 선택
-            ttk.Label(main_frame, text="대상 폴더:").grid(row=1, column=0, sticky=tk.W)
-            self.folder_path = ttk.Entry(main_frame, width=50)
-            self.folder_path.grid(row=1, column=1, sticky=(tk.W, tk.E))
-            ttk.Button(main_frame, text="찾아보기", command=self.browse_folder).grid(row=1, column=2)
+            # 폴더 선택 프레임 (row 1)
+            folder_frame = ttk.Frame(main_frame)
+            folder_frame.grid(row=1, column=0, columnspan=3, sticky=(tk.W, tk.E))
             
-            # 진행 상황 표시
+            ttk.Label(folder_frame, text="대상 폴더:").grid(row=0, column=0, sticky=tk.W)
+            self.folder_path = ttk.Entry(folder_frame, width=50)
+            self.folder_path.grid(row=0, column=1, sticky=(tk.W, tk.E))
+            ttk.Button(folder_frame, text="찾아보기", 
+                       command=self.browse_folder).grid(row=0, column=2, padx=5)
+            
+            # 추가 요청사항 입력 프레임 (row 2)
+            request_frame = ttk.Frame(main_frame)
+            request_frame.grid(row=2, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=5)
+            
+            ttk.Label(request_frame, text="추가 요청사항").grid(row=0, column=0, sticky=tk.W)
+            self.additional_request = tk.Text(request_frame, height=3, width=50)
+            self.additional_request.grid(row=0, column=1, sticky=(tk.W, tk.E))
+            
+            # 진행 상황 표시 (row 3)
             self.progress_var = tk.StringVar(value="준비됨")
-            ttk.Label(main_frame, textvariable=self.progress_var).grid(row=2, column=0, columnspan=3)
+            ttk.Label(main_frame, textvariable=self.progress_var).grid(row=3, column=0, columnspan=3)
             
-            # 파일 목록 표시
+            # 파일 목록 표시 (row 4)
             self.file_list = tk.Text(main_frame, height=15, width=70)
-            self.file_list.grid(row=3, column=0, columnspan=3, pady=10)
+            self.file_list.grid(row=4, column=0, columnspan=3, pady=10)
             
             # 파일 이름 변경 기록 저장용 딕셔너리 추가
             self.rename_history = {}
             
             # 버튼 프레임 추가
             button_frame = ttk.Frame(main_frame)
-            button_frame.grid(row=4, column=0, columnspan=3, pady=10)
+            button_frame.grid(row=5, column=0, columnspan=3, pady=10)
             
             # 버튼 배치 수정
             ttk.Button(button_frame, text="파일 이름 변경 시작", 
@@ -155,6 +167,9 @@ class FileRenamerGUI:
         try:
             client = Anthropic(api_key=api_key)
             
+            # 추가 요청사항 가져오기
+            additional_request = self.additional_request.get("1.0", tk.END).strip()
+            
             prompt = """다음 파일들의 메타데이터를 분석하여 각 파일의 내용을 더 잘 설명할 수 있는 새로운 파일 이름을 제안해주세요.
             
             규칙:
@@ -168,7 +183,13 @@ class FileRenamerGUI:
             - 20240320_image_제주도_풍경_사진.jpg
             - 20240320_document_회사_보고서_초안.pdf
             - 20240320_video_가족_여행_영상.mp4
+            """
             
+            # 추가 요청사항이 있는 경우에만 포함
+            if additional_request:
+                prompt += f"\n추가 요청사항:\n{additional_request}\n"
+            
+            prompt += """
             파일명에서 단어 구분을 위해 반드시 언더바(_)를 사용하여 읽기 쉽게 만들어주세요.
             
             파일 메타데이터:"""
